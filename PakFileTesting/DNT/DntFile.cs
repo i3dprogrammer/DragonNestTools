@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace PakFileTesting.DNT
+namespace DragonNestTools.DNT
 {
     class DntFile : DataTable
     {

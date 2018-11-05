@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Ionic.Zlib;
 
-namespace PakFileTesting
+namespace DragonNestTools
 {
     /// <summary>
     /// A simple Pak file parses

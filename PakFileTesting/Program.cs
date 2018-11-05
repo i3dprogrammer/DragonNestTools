@@ -4,10 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
-using PakFileTesting.DNT;
+using DragonNestTools.DNT;
 using System.Xml.Linq;
 
-namespace PakFileTesting
+namespace DragonNestTools
 {
     class Program
     {
