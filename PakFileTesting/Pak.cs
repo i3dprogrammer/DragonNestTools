@@ -8,6 +8,9 @@ using Ionic.Zlib;
 
 namespace PakFileTesting
 {
+    /// <summary>
+    /// A simple Pak file parses
+    /// </summary>
     class PakFile
     {
         public string Identifier = "EyedentityGames Packing File 0.1";
@@ -16,6 +19,10 @@ namespace PakFileTesting
         private uint FilesOffset { get; set; }
         private string path { get; set; }
 
+        /// <summary>
+        /// Start parsing the Pak file.
+        /// </summary>
+        /// <param name="path">The path to the Pak file.</param>
         public PakFile(string path)
         {
             this.path = path;
@@ -53,8 +60,16 @@ namespace PakFileTesting
             }
         }
 
+        /// <summary>
+        /// Extracts a file from the PAK file.
+        /// </summary>
+        /// <param name="file">PakFileHeader to get the file size and offset from.</param>
+        /// <returns>A byte array containing the uncompressed data.</returns>
         public byte[] ExtractFile(PakFileHeader file)
         {
+            if (!Files.Contains(file))
+                return new byte[0];
+
             using (var fs = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
                 using (var reader = new BinaryReader(fs))
@@ -68,9 +83,15 @@ namespace PakFileTesting
             }
         }
 
-        public bool ImportFile(byte[] data)
+        /// <summary>
+        /// Imports a file into a PAK file.
+        /// </summary>
+        /// <param name="data">The bytes to import in the PAK.</param>
+        /// <param name="path">The path containing the file name and where to import the file to.</param>
+        /// <returns>A bool specifying whether or not the importing succeeded.</returns>
+        public bool ImportFile(string path, byte[] data)
         {
-
+            return false;
         }
     }
 }
