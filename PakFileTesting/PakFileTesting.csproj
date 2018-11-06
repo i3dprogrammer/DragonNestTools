@@ -50,8 +50,8 @@
     <Compile Include="DNT\DntFile.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="Pak.cs" />
     <Compile Include="PakFile.cs" />
+    <Compile Include="PakFileHeader.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
