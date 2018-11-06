@@ -17,20 +17,21 @@ namespace DragonNestTools
         public uint FileCount { get; private set; }
         public List<PakFileHeader> Files { get; private set; }
         private uint HeaderFilesOffset { get; set; }
-        private string path { get; set; }
-
+        //private byte[] PakData;
+        private string PakFilePath;
         /// <summary>
         /// Start parsing the Pak file.
         /// </summary>
         /// <param name="path">The path to the Pak file.</param>
         public PakFile(string path)
         {
-            this.path = path;
             try
             {
+                PakFilePath = path;
+                //PakData = File.ReadAllBytes(path);
                 Files = new List<PakFileHeader>();
 
-                using (var stream = new StreamReader(path))
+                using (var stream = new StreamReader(PakFilePath))
                 {
                     using (var br = new BinaryReader(stream.BaseStream))
                     {
@@ -54,7 +55,7 @@ namespace DragonNestTools
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Couldn't open the file {path.Split('\\').Last()} {Environment.NewLine}{ex.Message}");
+                Console.WriteLine($"Couldn't open the file {path.Split('\\').Last()} {Environment.NewLine}{ex.Message}{Environment.NewLine}{ex.StackTrace}");
             }
         }
 
@@ -68,7 +69,7 @@ namespace DragonNestTools
             if (!Files.Contains(file))
                 return new byte[0];
 
-            using (var fs = File.Open(this.path, FileMode.Open, FileAccess.Read, FileShare.Read))
+            using (var fs = File.Open(PakFilePath, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
                 using (var reader = new BinaryReader(fs))
                 {
@@ -85,59 +86,67 @@ namespace DragonNestTools
         /// Imports a file into a PAK file.
         /// </summary>
         /// <param name="fileData">The bytes to import in the PAK.</param>
-        /// <param name="path">The path containing the file name and where to import the file to.</param>
+        /// <param name="pathInPak">The path containing the file name and where to import the file to.</param>
         /// <returns>A bool specifying whether or not the importing succeeded.</returns>
-        public bool ImportFile(string path, byte[] fileData)
+        public bool ImportFile(string pathInPak, byte[] fileData, string newPakFilePath)
         {
-            PakFileHeader existingFile = null;
-            var compressedData = ZlibStream.CompressBuffer(fileData);
-
-            if (Files.Exists(x => x.Path == path))
-                existingFile = Files.First(x => x.Path == path);
-            else
-                FileCount++;
-            
-            var pakData = File.ReadAllBytes(this.path); //Get PAK data
-            byte[] buffer = null;
-
-            if (existingFile == null)
-                buffer = new byte[pakData.Length + compressedData.Length + 0x13C]; //Create a new buffer with extra space for the file data & the header!
-            else
-                buffer = new byte[pakData.Length + compressedData.Length]; //Create a new buffer with extra space for the file data only!
-
-            pakData.CopyTo(buffer, 0);
-
-            //Shift the file headers by compressed data length so we can add the compressed data before it starts.
-            Array.Copy(buffer, HeaderFilesOffset, buffer, HeaderFilesOffset + compressedData.Length, pakData.Length - HeaderFilesOffset);
-
-            //Add the compressed data at the OLD header files offset.
-            Array.Copy(compressedData, 0, buffer, HeaderFilesOffset, compressedData.Length);
-
-            using (var fs = new MemoryStream(buffer))
+            try
             {
-                //Create the file header data
-                var headerData = PakFileHeader.CreateFileHeader(path, (uint)compressedData.Length, (uint)fileData.Length, HeaderFilesOffset);
+                PakFileHeader existingFile = null;
+                var compressedData = ZlibStream.CompressBuffer(fileData);
+
+                if (Files.Exists(x => x.Path == pathInPak))
+                    existingFile = Files.First(x => x.Path == pathInPak);
+                else
+                    FileCount++;
+
+                var PakData = File.ReadAllBytes(PakFilePath);
+                byte[] buffer = null;
 
                 if (existingFile == null)
-                    fs.Seek(-0x13C, SeekOrigin.End); //Seek to the end of the Pak, so we can add the new header file.
+                    buffer = new byte[PakData.Length + compressedData.Length + 0x13C]; //Create a new buffer with extra space for the file data & the header!
                 else
-                    fs.Seek(existingFile.HeaderOffset + compressedData.Length, SeekOrigin.Begin); //Seek to the start of the old header file to overwrite.
+                    buffer = new byte[PakData.Length + compressedData.Length]; //Create a new buffer with extra space for the file data only!
 
-                fs.Write(headerData, 0, headerData.Length); //Write the header file
+                PakData.CopyTo(buffer, 0);
 
-                //Write the new/old file count
-                fs.Seek(0x104, SeekOrigin.Begin);
-                var fileCount = BitConverter.GetBytes(FileCount);
-                fs.Write(fileCount, 0, fileCount.Length);
+                //Shift the file headers by compressed data length so we can add the compressed data before it starts.
+                Array.Copy(buffer, HeaderFilesOffset, buffer, HeaderFilesOffset + compressedData.Length, PakData.Length - HeaderFilesOffset);
 
-                //Write the new HeaderFileOffset (it will get changed if we added more files)
-                var headerFilesOffset = BitConverter.GetBytes(HeaderFilesOffset + compressedData.Length);
-                fs.Write(headerFilesOffset, 0, headerFilesOffset.Length);
+                //Add the compressed data at the OLD header files offset.
+                Array.Copy(compressedData, 0, buffer, HeaderFilesOffset, compressedData.Length);
+
+                using (var fs = new MemoryStream(buffer))
+                {
+                    //Create the file header data
+                    var headerData = PakFileHeader.CreateFileHeaderData(pathInPak, (uint)compressedData.Length, (uint)fileData.Length, HeaderFilesOffset);
+
+                    if (existingFile == null)
+                        fs.Seek(-0x13C, SeekOrigin.End); //Seek to the end of the Pak, so we can add the new header file.
+                    else
+                        fs.Seek(existingFile.HeaderOffset + compressedData.Length, SeekOrigin.Begin); //Seek to the start of the old header file to overwrite.
+
+                    fs.Write(headerData, 0, headerData.Length); //Write the header file
+
+                    //Write the new/old file count
+                    fs.Seek(0x104, SeekOrigin.Begin);
+                    var fileCount = BitConverter.GetBytes(FileCount);
+                    fs.Write(fileCount, 0, fileCount.Length);
+
+                    //Write the new HeaderFileOffset (it will get changed if we added more files)
+                    var headerFilesOffset = BitConverter.GetBytes(HeaderFilesOffset + compressedData.Length);
+                    HeaderFilesOffset += (uint)compressedData.Length; //Update the HeaderFilesOffset by the new file margin.
+                    fs.Write(headerFilesOffset, 0, headerFilesOffset.Length);
+                }
+
+                File.WriteAllBytes(newPakFilePath, buffer);
+                return true;
             }
-
-            File.WriteAllBytes(@"F:\Dragon Nest MuSh0 Version\Extracted PAK files\Resource16\Resource18.pak", buffer);
-            //Return true for now.
-            return true;
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return false;
+            }
         }
     }
 }

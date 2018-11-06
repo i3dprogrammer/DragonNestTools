@@ -77,7 +77,7 @@ namespace DragonNestTools
             reader.ReadBytes(sizeof(uint) * NullDataCount); // Padding
         }
 
-        public static byte[] CreateFileHeader(string path, uint compressedSize, uint originalSize, uint fileOffset)
+        public static byte[] CreateFileHeaderData(string path, uint compressedSize, uint originalSize, uint fileOffset)
         {
             byte[] fullBytes = new byte[0x100];
             var pathBytes = Encoding.ASCII.GetBytes(path);
