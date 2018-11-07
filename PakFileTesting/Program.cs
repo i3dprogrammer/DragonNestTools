@@ -4,25 +4,42 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
-using DragonNestTools.DNT;
+using DNTools.DNT;
 using System.Xml.Linq;
 using Ionic.Zlib;
 
-namespace DragonNestTools
+namespace DNTools
 {
     class Program
     {
         public static Dictionary<string, string> translator = new Dictionary<string, string>();
         static void Main(string[] args)
         {
-            var pak = new PakFile(@"F:\Dragon Nest MuSh0 Version\Dragon Nest\Resource02.pak");
 
-            //foreach (var f in Directory.GetFiles(@"F:\Dragon Nest MuSh0 Version\Extracted PAK files\Resource16\resource\char\monster\academic_tower\"))
-            //{
-            //    var path = f.Replace(@"F:\Dragon Nest MuSh0 Version\Extracted PAK files\Resource16", "");
-            //    pak.ImportFile(path, File.ReadAllBytes(f));
-            //}
-            //pak.Flush();
+            //pak.ImportFile(@"\resource\sound\magdonia\test.fu",
+            //    File.ReadAllBytes(@"F:\Dragon Nest MuSh0 Version\Extracted PAK files\ImportingTest\resource\sound\magdonia\test.fu"));
+
+            foreach (var f in Directory.GetFiles(@"F:\Dragon Nest MuSh0 Version\Extracted PAK files\ImportingTest\resource", "*.*", SearchOption.AllDirectories))
+            {
+                var pakSingle = new PakFile(@"F:\Dragon Nest MuSh0 Version\Extracted PAK files\ImportingTest\Resource01-ClerJap-Single.pak");
+                var pathSingle = f.Replace(@"F:\Dragon Nest MuSh0 Version\Extracted PAK files\ImportingTest", "");
+                pakSingle.ImportFile(pathSingle, File.ReadAllBytes(f));
+                Console.WriteLine($"Imported {pathSingle}");
+            }
+
+            Console.WriteLine("Single file importing finished.");
+            Console.WriteLine("Starting mutlifile importing.");
+
+            var pakMulti = new PakFile(@"F:\Dragon Nest MuSh0 Version\Extracted PAK files\ImportingTest\Resource01-ClerJap-Multi.pak");
+
+            foreach (var f in Directory.GetFiles(@"F:\Dragon Nest MuSh0 Version\Extracted PAK files\ImportingTest\resource", "*.*", SearchOption.AllDirectories))
+            {
+                var pathMulti = f.Replace(@"F:\Dragon Nest MuSh0 Version\Extracted PAK files\ImportingTest", "");
+                pakMulti.ImportFile(pathMulti, File.ReadAllBytes(f));
+                Console.WriteLine($"Imported {pathMulti}");
+            }
+
+            Console.WriteLine("Multifile importing finished.");
 
             //pak.ImportFile(@"\resource\char\monster\academic_tower\testerino.act",
             //    File.ReadAllBytes(@"F:\Dragon Nest MuSh0 Version\Extracted PAK files\Resource16\resource\char\monster\academic_tower\testerino.act"));
@@ -38,16 +55,16 @@ namespace DragonNestTools
             //using (var fs = File.OpenWrite(@"F:\Dragon Nest MuSh0 Version\Extracted PAK files\Resource16\resource\char\monster\academic_tower\test.act"))
             //    fs.Write(data, 0, data.Length);
 
-            pak.Files.ForEach(x =>
-            {
-                FileInfo info = new FileInfo(@"F:\Dragon Nest MuSh0 Version\Extracted PAK files\Resource1" + x.Path);
-                if (!info.Directory.Exists)
-                    Directory.CreateDirectory(info.Directory.FullName);
+            //pak.Files.ForEach(x =>
+            //{
+            //    FileInfo info = new FileInfo(@"F:\Dragon Nest MuSh0 Version\Extracted PAK files\Resource1" + x.Path);
+            //    if (!info.Directory.Exists)
+            //        Directory.CreateDirectory(info.Directory.FullName);
 
-                var data = pak.ExtractFile(x);
-                using (var fs = File.OpenWrite(info.FullName))
-                    fs.Write(data, 0, data.Length);
-            });
+            //    var data = pak.ExtractFile(x);
+            //    using (var fs = File.OpenWrite(info.FullName))
+            //        fs.Write(data, 0, data.Length);
+            //});
 
             //Console.WriteLine($"{pak.Files[0].RawSize}, {pak.Files[0].OriginalSize}, {pak.Files[0].CompressedSize}");
             //var doc = XDocument.Load(@"F:\Dragon Nest MuSh0 Version\Extracted PAK files\OldPatch\resource\uistring\uistring.xml");

@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Ionic.Zlib;
 
-namespace DragonNestTools
+namespace DNTools
 {
     /// <summary>
     /// A simple Pak file parses
@@ -83,12 +83,12 @@ namespace DragonNestTools
         }
 
         /// <summary>
-        /// Imports a file into a PAK file.
+        /// Imports a file into a PAK file
         /// </summary>
         /// <param name="fileData">The bytes to import in the PAK.</param>
         /// <param name="pathInPak">The path containing the file name and where to import the file to.</param>
         /// <returns>A bool specifying whether or not the importing succeeded.</returns>
-        public bool ImportFile(string pathInPak, byte[] fileData, string newPakFilePath)
+        public bool ImportFile(string pathInPak, byte[] fileData)
         {
             try
             {
@@ -100,33 +100,22 @@ namespace DragonNestTools
                 else
                     FileCount++;
 
-                var PakData = File.ReadAllBytes(PakFilePath);
-                byte[] buffer = null;
+                var headerData = PakFileHeader.CreateFileHeaderData(pathInPak, (uint)compressedData.Length, (uint)fileData.Length, HeaderFilesOffset);
 
-                if (existingFile == null)
-                    buffer = new byte[PakData.Length + compressedData.Length + 0x13C]; //Create a new buffer with extra space for the file data & the header!
-                else
-                    buffer = new byte[PakData.Length + compressedData.Length]; //Create a new buffer with extra space for the file data only!
-
-                PakData.CopyTo(buffer, 0);
-
-                //Shift the file headers by compressed data length so we can add the compressed data before it starts.
-                Array.Copy(buffer, HeaderFilesOffset, buffer, HeaderFilesOffset + compressedData.Length, PakData.Length - HeaderFilesOffset);
-
-                //Add the compressed data at the OLD header files offset.
-                Array.Copy(compressedData, 0, buffer, HeaderFilesOffset, compressedData.Length);
-
-                using (var fs = new MemoryStream(buffer))
+                using (var fs = File.Open(PakFilePath, FileMode.Open, FileAccess.ReadWrite, FileShare.Read))
                 {
-                    //Create the file header data
-                    var headerData = PakFileHeader.CreateFileHeaderData(pathInPak, (uint)compressedData.Length, (uint)fileData.Length, HeaderFilesOffset);
+                    fs.Seek(HeaderFilesOffset, SeekOrigin.Begin);
+                    byte[] shiftedData = new byte[fs.Length - HeaderFilesOffset];
+                    fs.Read(shiftedData, 0, shiftedData.Length);
 
-                    if (existingFile == null)
-                        fs.Seek(-0x13C, SeekOrigin.End); //Seek to the end of the Pak, so we can add the new header file.
-                    else
-                        fs.Seek(existingFile.HeaderOffset + compressedData.Length, SeekOrigin.Begin); //Seek to the start of the old header file to overwrite.
+                    fs.Seek(HeaderFilesOffset, SeekOrigin.Begin);
+                    fs.Write(compressedData, 0, compressedData.Length);
+                    fs.Write(shiftedData, 0, shiftedData.Length);
 
-                    fs.Write(headerData, 0, headerData.Length); //Write the header file
+                    if (existingFile != null)
+                        fs.Seek(existingFile.HeaderOffset + compressedData.Length, SeekOrigin.Begin);
+
+                    fs.Write(headerData, 0, headerData.Length);
 
                     //Write the new/old file count
                     fs.Seek(0x104, SeekOrigin.Begin);
@@ -135,11 +124,30 @@ namespace DragonNestTools
 
                     //Write the new HeaderFileOffset (it will get changed if we added more files)
                     var headerFilesOffset = BitConverter.GetBytes(HeaderFilesOffset + compressedData.Length);
-                    HeaderFilesOffset += (uint)compressedData.Length; //Update the HeaderFilesOffset by the new file margin.
                     fs.Write(headerFilesOffset, 0, headerFilesOffset.Length);
+
+                    if (existingFile != null)
+                    {
+                        Files.Add(new PakFileHeader(
+                            pathInPak,
+                            (uint)fileData.Length,
+                            (uint)compressedData.Length,
+                            HeaderFilesOffset,
+                            existingFile.HeaderOffset));
+                        Files.Remove(existingFile);
+                    }
+                    else
+                    {
+                        Files.Add(new PakFileHeader(
+                            pathInPak,
+                            (uint)fileData.Length,
+                            (uint)compressedData.Length,
+                            HeaderFilesOffset,
+                            HeaderFilesOffset + compressedData.Length + shiftedData.Length));
+                    }
                 }
 
-                File.WriteAllBytes(newPakFilePath, buffer);
+                HeaderFilesOffset += (uint)compressedData.Length; //Shift the HeaderFilesOffset by the new file margin.
                 return true;
             }
             catch (Exception ex)
@@ -147,6 +155,7 @@ namespace DragonNestTools
                 Console.WriteLine(ex.Message);
                 return false;
             }
+
         }
     }
 }

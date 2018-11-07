@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DragonNestTools
+namespace DNTools
 {
     class PakFileHeader
     {
@@ -13,17 +13,6 @@ namespace DragonNestTools
         /// Full path of the file containing the file name.
         /// </summary>
         public string Path { get; set; }
-
-        /// <summary>
-        /// File name.
-        /// </summary>
-        public string Name
-        {
-            get
-            {
-                return Path.Split('\\').Last().Trim('\0');
-            }
-        }
 
         /// <summary>
         /// Raw file size.
@@ -49,6 +38,18 @@ namespace DragonNestTools
         /// This header offset from beginning.
         /// </summary>
         public long HeaderOffset { get; set; }
+
+        /// <summary>
+        /// File name.
+        /// </summary>
+        public string Name
+        {
+            get
+            {
+                return Path.Split('\\').Last().Trim('\0');
+            }
+        }
+
 
         private uint Unknown { get; set; }
         private const int NullDataCount = 10;
@@ -77,6 +78,15 @@ namespace DragonNestTools
             reader.ReadBytes(sizeof(uint) * NullDataCount); // Padding
         }
 
+        public PakFileHeader(string path, uint originalSize, uint compressedSize, uint fileOffset, long headerOffset)
+        {
+            Path = path;
+            OriginalSize = originalSize;
+            CompressedSize = compressedSize;
+            FileOffset = fileOffset;
+            HeaderOffset = headerOffset;
+        }
+
         public static byte[] CreateFileHeaderData(string path, uint compressedSize, uint originalSize, uint fileOffset)
         {
             byte[] fullBytes = new byte[0x100];
@@ -93,7 +103,7 @@ namespace DragonNestTools
                 writer.Write(new byte[4], 0, 4);
                 writer.Write(new byte[sizeof(uint) * NullDataCount], 0, 40);
                 writer.Flush();
-                
+
                 return writer.ToArray();
             }
         }
