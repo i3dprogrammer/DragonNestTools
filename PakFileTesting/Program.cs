@@ -15,30 +15,35 @@ namespace DNTools
         public static Dictionary<string, string> translator = new Dictionary<string, string>();
         static void Main(string[] args)
         {
+
+            //var pak = new PakFile(@"F:\Dragon Nest MuSh0 Version\Extracted PAK files\ImportingTest\Resource01-ClerJap - Copy.pak");
+            //pak.ImportFile(@"\resource\uistring\uistring.xml",
+            //    File.ReadAllBytes(@"F:\Dragon Nest MuSh0 Version\Extracted PAK files\TestingUIStrings\4951uistring.xml"));
+
             //pak.ImportFile(@"\resource\sound\magdonia\test.fu",
             //    File.ReadAllBytes(@"F:\Dragon Nest MuSh0 Version\Extracted PAK files\ImportingTest\resource\sound\magdonia\test.fu"));
 
-            foreach (var f in Directory.GetFiles(@"F:\Dragon Nest MuSh0 Version\Extracted PAK files\ImportingTest\resource", "*.*", SearchOption.AllDirectories))
-            {
-                var pakSingle = new PakFile(@"F:\Dragon Nest MuSh0 Version\Extracted PAK files\ImportingTest\Resource01-ClerJap-Single.pak");
-                var pathSingle = f.Replace(@"F:\Dragon Nest MuSh0 Version\Extracted PAK files\ImportingTest", "");
-                pakSingle.ImportFile(pathSingle, File.ReadAllBytes(f));
-                Console.WriteLine($"Imported {pathSingle}");
-            }
+            //foreach (var f in Directory.GetFiles(@"F:\Dragon Nest MuSh0 Version\Extracted PAK files\ImportingTest\resource", "*.*", SearchOption.AllDirectories))
+            //{
+            //    var pakSingle = new PakFile(@"F:\Dragon Nest MuSh0 Version\Extracted PAK files\ImportingTest\Resource01-ClerJap-Single.pak");
+            //    var pathSingle = f.Replace(@"F:\Dragon Nest MuSh0 Version\Extracted PAK files\ImportingTest", "");
+            //    pakSingle.ImportFile(pathSingle, File.ReadAllBytes(f));
+            //    Console.WriteLine($"Imported {pathSingle}");
+            //}
 
-            Console.WriteLine("Single file importing finished.");
-            Console.WriteLine("Starting mutlifile importing.");
+            //Console.WriteLine("Single file importing finished.");
+            //Console.WriteLine("Starting mutlifile importing.");
 
-            var pakMulti = new PakFile(@"F:\Dragon Nest MuSh0 Version\Extracted PAK files\ImportingTest\Resource01-ClerJap-Multi.pak");
+            //var pakMulti = new PakFile(@"F:\Dragon Nest MuSh0 Version\Extracted PAK files\ImportingTest\Resource01-ClerJap-Multi.pak");
 
-            foreach (var f in Directory.GetFiles(@"F:\Dragon Nest MuSh0 Version\Extracted PAK files\ImportingTest\resource", "*.*", SearchOption.AllDirectories))
-            {
-                var pathMulti = f.Replace(@"F:\Dragon Nest MuSh0 Version\Extracted PAK files\ImportingTest", "");
-                pakMulti.ImportFile(pathMulti, File.ReadAllBytes(f));
-                Console.WriteLine($"Imported {pathMulti}");
-            }
+            //foreach (var f in Directory.GetFiles(@"F:\Dragon Nest MuSh0 Version\Extracted PAK files\ImportingTest\resource", "*.*", SearchOption.AllDirectories))
+            //{
+            //    var pathMulti = f.Replace(@"F:\Dragon Nest MuSh0 Version\Extracted PAK files\ImportingTest", "");
+            //    pakMulti.ImportFile(pathMulti, File.ReadAllBytes(f));
+            //    Console.WriteLine($"Imported {pathMulti}");
+            //}
 
-            Console.WriteLine("Multifile importing finished.");
+            //Console.WriteLine("Multifile importing finished.");
 
             //pak.ImportFile(@"\resource\char\monster\academic_tower\testerino.act",
             //    File.ReadAllBytes(@"F:\Dragon Nest MuSh0 Version\Extracted PAK files\Resource16\resource\char\monster\academic_tower\testerino.act"));

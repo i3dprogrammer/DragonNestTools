@@ -173,7 +173,8 @@ namespace DNTools
                     fs.Write(Encoding.ASCII.GetBytes(Identifier), 0, Identifier.Length); //File Identifier
                     fs.Write(new byte[0xE4], 0, 0xE4); //Null bytes
                     fs.Write(BitConverter.GetBytes((uint)0), 0, 4); //Files count initialized 0
-                    fs.Write(BitConverter.GetBytes((uint)fs.Length), 0, 4); //HeaderFileOffset
+                    fs.Write(BitConverter.GetBytes((uint)fs.Length + 0x2F4 + 4), 0, 4); //HeaderFileOffset
+                    fs.Write(new byte[0x2F4], 0, 0x2F4);
                 }
                 return true;
             } catch (Exception ex)
