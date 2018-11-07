@@ -15,7 +15,6 @@ namespace DNTools
         public static Dictionary<string, string> translator = new Dictionary<string, string>();
         static void Main(string[] args)
         {
-
             //pak.ImportFile(@"\resource\sound\magdonia\test.fu",
             //    File.ReadAllBytes(@"F:\Dragon Nest MuSh0 Version\Extracted PAK files\ImportingTest\resource\sound\magdonia\test.fu"));
 

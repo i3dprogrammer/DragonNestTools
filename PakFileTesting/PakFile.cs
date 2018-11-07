@@ -13,7 +13,7 @@ namespace DNTools
     /// </summary>
     class PakFile
     {
-        public string Identifier = "EyedentityGames Packing File 0.1";
+        public const string Identifier = "EyedentityGames Packing File 0.1";
         public uint FileCount { get; private set; }
         public List<PakFileHeader> Files { get; private set; }
         private uint HeaderFilesOffset { get; set; }
@@ -44,7 +44,7 @@ namespace DNTools
 
                         br.BaseStream.Position = 0x104; // Skipping the unknown data
                         FileCount = br.ReadUInt32();
-                        HeaderFilesOffset = br.ReadUInt32(); //Where the files data is.
+                        HeaderFilesOffset = br.ReadUInt32(); // Where the file headers are.
                         br.BaseStream.Position = HeaderFilesOffset; // Jumping to where the file header parsing starts.
                         for (int i = 0; i < FileCount; i++)
                         {
@@ -101,17 +101,21 @@ namespace DNTools
                     FileCount++;
 
                 var headerData = PakFileHeader.CreateFileHeaderData(pathInPak, (uint)compressedData.Length, (uint)fileData.Length, HeaderFilesOffset);
-
                 using (var fs = File.Open(PakFilePath, FileMode.Open, FileAccess.ReadWrite, FileShare.Read))
                 {
+                    //Copy the FileHeaders so we can overwrite it with the compressed file's data.
                     fs.Seek(HeaderFilesOffset, SeekOrigin.Begin);
                     byte[] shiftedData = new byte[fs.Length - HeaderFilesOffset];
                     fs.Read(shiftedData, 0, shiftedData.Length);
 
+                    //Write the compressed files data at the end of ALL THE FILES DATA
                     fs.Seek(HeaderFilesOffset, SeekOrigin.Begin);
                     fs.Write(compressedData, 0, compressedData.Length);
+
+                    //Write the copied file headers
                     fs.Write(shiftedData, 0, shiftedData.Length);
 
+                    //Write the new file header
                     if (existingFile != null)
                         fs.Seek(existingFile.HeaderOffset + compressedData.Length, SeekOrigin.Begin);
 
@@ -126,6 +130,7 @@ namespace DNTools
                     var headerFilesOffset = BitConverter.GetBytes(HeaderFilesOffset + compressedData.Length);
                     fs.Write(headerFilesOffset, 0, headerFilesOffset.Length);
 
+                    //Add the new FileHeader to the Files list.
                     if (existingFile != null)
                     {
                         Files.Add(new PakFileHeader(
@@ -147,7 +152,8 @@ namespace DNTools
                     }
                 }
 
-                HeaderFilesOffset += (uint)compressedData.Length; //Shift the HeaderFilesOffset by the new file margin.
+                //Shift the HeaderFilesOffset by the new file margin.
+                HeaderFilesOffset += (uint)compressedData.Length; 
                 return true;
             }
             catch (Exception ex)
@@ -156,6 +162,25 @@ namespace DNTools
                 return false;
             }
 
+        }
+
+        public static bool CreatePakFile(string saveDestination)
+        {
+            try
+            {
+                using(var fs = File.Open(saveDestination, FileMode.Create, FileAccess.Write, FileShare.None))
+                {
+                    fs.Write(Encoding.ASCII.GetBytes(Identifier), 0, Identifier.Length); //File Identifier
+                    fs.Write(new byte[0xE4], 0, 0xE4); //Null bytes
+                    fs.Write(BitConverter.GetBytes((uint)0), 0, 4); //Files count initialized 0
+                    fs.Write(BitConverter.GetBytes((uint)fs.Length), 0, 4); //HeaderFileOffset
+                }
+                return true;
+            } catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message); ;
+                return false;
+            }
         }
     }
 }
