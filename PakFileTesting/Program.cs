@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.IO;
 using DNTools.DNT;
 using System.Xml.Linq;
+using System.Data;
 
 namespace DNTools
 {
@@ -14,46 +15,66 @@ namespace DNTools
         public static Dictionary<string, string> translator = new Dictionary<string, string>();
         public const string LogPath = "DiffFiles.txt";
 
+        public static uint[] testArray = new uint[]
+        {
+            0x1A91,
+            0xA26D,
+            0x14A1,
+            0xA2D9,
+            0xA22C,
+            0xA4D8,
+            0x537A,
+            0x13AE,
+            0x537B,
+            0x5376,
+            0x5377,
+            0x5378,
+            0x5379,
+            0x1AB0
+        };
+
         static void Log(string text)
         {
             using (var writer = new StreamWriter(LogPath, true))
                 writer.WriteLine(text + Environment.NewLine);
         }
 
-        static void TestZlibAlgorithm(string fileName, byte[] data, Func<byte[], byte[]> DecompressAglorithm, Func<byte[], byte[]> CompressAglorithm)
-        {
-            var folderName = fileName.Split('.').First() + "\\";
-
-
-            string gameCompressedFilePath = folderName + fileName;
-            string decompressedPath = folderName + fileName.Split('.').First() + "_r." + fileName.Split('.').Last();
-            string fakeCompressedPath = folderName + fileName.Split('.').First() + "_f." + fileName.Split('.').Last();
-
-            if (!Directory.Exists(folderName))
-                Directory.CreateDirectory(folderName);
-
-
-            Console.WriteLine("Writing File!");
-            File.WriteAllBytes(gameCompressedFilePath, data);
-            Console.WriteLine("Decompressing!");
-            File.WriteAllBytes(decompressedPath, DecompressAglorithm(File.ReadAllBytes(gameCompressedFilePath)));
-            Console.WriteLine("Compressing!");
-            File.WriteAllBytes(fakeCompressedPath, CompressAglorithm(File.ReadAllBytes(decompressedPath)));
-            Console.WriteLine("Finished!");
-        }
-
         static void Main(string[] args)
         {
+            var p = @"F:\Dragon Nest MuSh0 Version\Extracted PAK files\dnt\resource\ext";
+            bool saved = false;
+            List<string> lines = new List<string>();
+            foreach (var file in Directory.GetFiles(p))
+            {
+                if (!file.Contains("itemtable") || !file.EndsWith(".dnt"))
+                    continue;
 
-            var path = @"F:\Dragon Nest MuSh0 Version\Dragon Nest\Resource03.pak";
+                var d = new DntFile(file);
+                Console.WriteLine($"Reading {file.Split('\\').Last()}");
 
-            var pak = new PakFile(path);
-            //var pak = PakFile.CreatePakFile(path);
+                if (d.Columns.Count != 98)
+                    continue;
 
-            pak.ImportFile(
-                @"\resource\uistring\uistring.xml",
-                File.ReadAllBytes(@"C:\Users\ahmed\source\repos\PakFileTesting\PakFileTesting\bin\Debug\uistring\uistring_r.xml"),
-                File.ReadAllBytes(@"C:\Users\ahmed\source\repos\PakFileTesting\PakFileTesting\bin\Debug\uistring\uistring_checksum.xml"));
+                if(!saved)
+                {
+                    lines.Add(d.Columns.Cast<DataColumn>().Select(x => x.ColumnName).Aggregate((x, y) => x + "," + y));
+                    saved = true;
+                }
+
+                foreach (DataRow k in d.Rows)
+                {
+                    var item = k.ItemArray.Select(x => x.ToString().Replace(",",";")).Aggregate((x,y) => x +","+y);
+                    lines.Add(item);
+                }
+                //d.ExportAsCSV(file.Replace("ext\\", "csv\\").Replace(".dnt", ".csv"));
+            }
+            File.WriteAllLines("DNData.txt", lines.ToArray());
+            return;
+
+            //pak.ImportFile(
+            //    @"\resource\uistring\uistring.xml",
+            //    File.ReadAllBytes(@"C:\Users\ahmed\source\repos\PakFileTesting\PakFileTesting\bin\Debug\uistring\uistring_r.xml"),
+            //    File.ReadAllBytes(@"C:\Users\ahmed\source\repos\PakFileTesting\PakFileTesting\bin\Debug\uistring\uistring_checksum.xml"));
 
             //PakFile.FillNulls(path, 450 * 1024 * 1024);
 
@@ -93,8 +114,6 @@ namespace DNTools
             //var pak = new PakFile(@"F:\Dragon Nest MuSh0 Version\Dragon Nest\Resource03.pak");
 
             //pak.ImportFile("\\resource\\uistring\\uistring.xml\0xml\0social_2.ani", File.ReadAllBytes(@"uistring_r.xml"));
-
-            //
 
             //File.WriteAllBytes("halfgolem_stone_c.dds", pak.ExtractFile(@"\resource\char\monster\halfgolem\halfgolem_stone.dds"));
             //File.WriteAllBytes("n2451_re_ray_mf_c.xml", pak.ExtractFile(@"\resource\script\talk_npc_ger\n2451_re_ray_mf.xml"));
@@ -155,8 +174,6 @@ namespace DNTools
             //var f = new ZInputStream();
             //File.WriteAllBytes(@"F:\Dragon Nest MuSh0 Version\Extracted PAK files\CompareUIStrings\fakeUIString.xml",
             //    ZlibStream.UncompressBuffer(File.ReadAllBytes(@"F:\Dragon Nest MuSh0 Version\Extracted PAK files\CompareUIStrings\fakeUIStringCompressed.xml")));
-
-            return;
 
             //pak.ImportFile(@"\resource\sound\magdonia\test.fu",
             //    File.ReadAllBytes(@"F:\Dragon Nest MuSh0 Version\Extracted PAK files\ImportingTest\resource\sound\magdonia\test.fu"));
@@ -234,6 +251,51 @@ namespace DNTools
             //}
 
             //dnt.WriteXml(new StreamWriter(@"F:\Dragon Nest MuSh0 Version\Extracted PAK files\OldPatch\monstertable_nest.xml"));
+        }
+
+        static void ExtractAllDntFiles()
+        {
+            var list = new List<string>();
+            var path = @"F:\Dragon Nest MuSh0 Version\Dragon Nest";
+            var exPath = @"F:\Dragon Nest MuSh0 Version\Extracted PAK files\dnt";
+            int counter = 0;
+            foreach (var file in Directory.GetFiles(path))
+            {
+                if (!file.EndsWith(".pak"))
+                    continue;
+
+                Console.WriteLine($"Reading {file.Split('\\').Last()}");
+
+                var pak = new PakFile(file);
+
+                pak.Files.ForEach(x =>
+                {
+                    if (x.Name.Contains(".") && !list.Contains(x.Name.Split('.').Last()))
+                        list.Add(x.Name.Split('.').Last());
+
+                    if (x.Name.EndsWith(".dnt"))
+                    {
+                        var fileDir = exPath + x.Path.Replace(x.Name, "");
+                        if (!Directory.Exists(fileDir))
+                            Directory.CreateDirectory(fileDir);
+
+                        var fileFullPath = fileDir + x.Name;
+                        if (File.Exists(fileFullPath))
+                            fileFullPath = fileDir + (counter++).ToString() + x.Name;
+
+                        Console.WriteLine($"Extracting {x.Name}");
+                        try
+                        {
+                            File.WriteAllBytes(fileFullPath, pak.ExtractFile(x));
+                        }
+                        catch { }
+                    }
+                });
+            }
+
+            Console.WriteLine("@@@@@@@@@@@@@@@@@@@");
+            foreach (var ext in list)
+                Console.WriteLine(ext);
         }
     }
 }
